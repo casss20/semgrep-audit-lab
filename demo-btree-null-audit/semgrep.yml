@@ -1,0 +1,60 @@
+configs:
+  - r2c-ci
+  - p/secrets
+  - p/python
+  - p/owasp-top-ten
+
+rules:
+  # Prompt injection surface
+  - id: ai.llm.prompt-injection.unbounded-input
+    message: |
+      Unbounded user-controlled input flows directly into an LLM call.
+    severity: WARNING
+    languages: [python]
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: request.$VAR
+          - pattern: input(...)
+    pattern-sinks:
+      - pattern: openai.ChatCompletion.create(..., messages=$SINK, ...)
+
+  # Shell exec tainted
+  - id: ai.tools.shell.exec-tainted
+    message: |
+      User or LLM-controlled text flows into shell execution.
+    severity: ERROR
+    languages: [python]
+    mode: taint
+    pattern-sources:
+      - pattern: request.$VAR
+    pattern-sinks:
+      - pattern-either:
+          - pattern: subprocess.run($CMD, ...)
+          - pattern: os.system($CMD)
+
+  # Pickle loads untrusted
+  - id: py.deserialization.pickle.loads-untrusted
+    message: |
+      Untrusted data deserialized via pickle.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: pickle.loads(...)
+
+  # Hardcoded OpenAI key (regex)
+  - id: secrets.api.openai.hardcoded
+    message: |
+      Possible hardcoded OpenAI API key.
+    severity: ERROR
+    languages: [python]
+    pattern-regex: "sk-[A-Za-z0-9]{20,}"
+
+  # Flask debug true
+  - id: py.flask.debug.true
+    message: |
+      Flask debug mode should not be enabled in production.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: app.run(..., debug=True, ...)
