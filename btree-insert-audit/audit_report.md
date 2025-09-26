@@ -35,4 +35,3 @@ Semgrep identified several issues, including at least the following bug, bad pra
 
 Memory leak due to missing destructors and delete statements: The code uses new to allocate memory for keys and children in the BTreeNode constructor, as well as for new nodes in insert and splitChild. However, there are no corresponding delete statements or a destructor to free this memory when nodes are no longer needed. This is flagged under Semgrep rules like cpp/security/memory-leak and cpp/best-practice/use-smart-pointers. It's a bad practice in modern C++ (post-C++11), where std::unique_ptr or std::vector should be used for automatic memory management.
 
-Why this would fail under load or FE exam scrutiny.
